@@ -1,0 +1,7 @@
+/target/
+/private-content/
+/saves/
+*.empire-save
+*.empire-replay
+.DS_Store
+

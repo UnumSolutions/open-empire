@@ -1,0 +1,13 @@
+[package]
+name = "empire-tools"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+empire-sim.workspace = true
+empire-content.workspace = true
+empire-ai.workspace = true
+empire-net.workspace = true
+serde_json.workspace = true
+blake3.workspace = true
+

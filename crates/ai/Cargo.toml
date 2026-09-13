@@ -1,0 +1,9 @@
+[package]
+name = "empire-ai"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+empire-sim.workspace = true
+empire-content.workspace = true
+

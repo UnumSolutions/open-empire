@@ -1,0 +1,27 @@
+[workspace]
+members = ["crates/*"]
+default-members = ["crates/content", "crates/sim", "crates/ai", "crates/net", "crates/tools"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+blake3 = "1.8"
+empire-content = { path = "crates/content" }
+empire-sim = { path = "crates/sim" }
+empire-ai = { path = "crates/ai" }
+empire-net = { path = "crates/net" }
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+overflow-checks = true
+lto = "thin"
+

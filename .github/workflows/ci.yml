@@ -1,0 +1,30 @@
+name: Rust
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.89.0
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Linux window dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxcursor-dev libxi-dev libxrandr-dev libxkbcommon-dev libudev-dev
+      - run: cargo fmt --all --check
+      - run: cargo test --locked
+      - run: cargo check --locked -p empire-client
+      - run: cargo run --locked -p empire-tools -- simulate 300 2 determinism.empire-replay
+      - run: cargo run --locked -p empire-tools -- replay determinism.empire-replay
+      - uses: actions/upload-artifact@v4
+        with:
+          name: replay-${{ matrix.os }}
+          path: determinism.empire-replay
