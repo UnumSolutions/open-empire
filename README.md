@@ -21,7 +21,7 @@ The original skirmish starts with three villagers and a town center. Select vill
 - Arrow keys pan; scroll zooms; Space pauses.
 - Ctrl/Cmd + 1–9 stores a control group; 1–9 recalls it.
 - H/B/R/S/D select house/barracks/archery range/stable/dock placement. Select a villager, then click a visible empty tile. Escape cancels.
-- The bottom toolbar builds and trains units. F5 saves state and replay; F9 restores the quicksave.
+- The bottom toolbar builds and trains units. F5 saves state and replay in the platform application-data folder (`~/Library/Application Support/Open Empire` on macOS); F9 restores the quicksave.
 - Touch: tap a friendly unit to select, then tap a destination/resource/enemy to order it. Two fingers pan and pinch zoom. Villagers/Army buttons select groups. Physical iPad validation remains outstanding.
 - Right-side chapter buttons load the three **prototype** original missions. These are not finished campaign content.
 

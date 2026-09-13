@@ -28,3 +28,22 @@ jobs:
         with:
           name: replay-${{ matrix.os }}
           path: determinism.empire-replay
+      - run: python scripts/test_tools.py
+  compare-determinism:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: replay-*
+          path: replays
+      - name: Compare platform state hashes
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          files = list(pathlib.Path('replays').glob('*/determinism.empire-replay'))
+          assert len(files) == 3, f'Expected three platform replays, got {len(files)}'
+          hashes = {json.loads(p.read_text())['final_hash'] for p in files}
+          assert len(hashes) == 1, f'Cross-platform desynchronization: {hashes}'
+          print('All three platform simulations agree:', next(iter(hashes)))
+          PY

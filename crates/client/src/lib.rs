@@ -219,21 +219,13 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>, game: Res<Ga
                 Transform::from_translation(iso(p).extend(-100.)),
                 Ground(p),
             ));
-            let t = game.world.map.tile(p).unwrap();
-            if let Some(r) = t.resource {
-                let image = if r == Goods::Wood {
-                    art.tree.clone()
-                } else {
-                    art.stone.clone()
-                };
-                commands.spawn((
-                    Sprite::from_image(image),
-                    Transform::from_translation(
-                        (iso(p) + Vec2::Y * 18.).extend(-(x + y) as f32 / 100.),
-                    ),
-                    Decoration(p),
-                ));
-            }
+            commands.spawn((
+                Sprite::from_image(art.stone.clone()),
+                Transform::from_translation(
+                    (iso(p) + Vec2::Y * 18.).extend(-(x + y) as f32 / 100.),
+                ),
+                Decoration(p),
+            ));
         }
     }
     commands.insert_resource(art);
@@ -306,12 +298,12 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>, game: Res<Ga
         .with_children(|p| {
             for (label, action) in [
                 ("New skirmish", ButtonAction::New),
-                ("1 · The Aster Frontier", ButtonAction::Mission(1)),
-                ("2 · The Broken Gate", ButtonAction::Mission(2)),
-                ("3 · The Veyran Crossing", ButtonAction::Mission(3)),
+                ("1 | The Aster Frontier", ButtonAction::Mission(1)),
+                ("2 | The Broken Gate", ButtonAction::Mission(2)),
+                ("3 | The Veyran Crossing", ButtonAction::Mission(3)),
                 ("Pause / Resume", ButtonAction::Pause),
-                ("Save · F5", ButtonAction::Save),
-                ("Load · F9", ButtonAction::Load),
+                ("Save | F5", ButtonAction::Save),
+                ("Load | F9", ButtonAction::Load),
             ] {
                 button(p, label, action);
             }
@@ -471,12 +463,16 @@ fn activate(game: &mut Game, action: &ButtonAction) {
             units: game.selected_units(),
         }),
         ButtonAction::Save => {
-            game.message = save_game(game)
-                .map_or_else(|e| e, |_| "Saved to saves/quicksave.empire-save".into());
+            game.message = save_game(game).map_or_else(
+                |e| e,
+                |_| "Quicksave and replay saved in the application data folder.".into(),
+            );
         }
         ButtonAction::Load => {
-            match std::fs::read("saves/quicksave.empire-save")
-                .map_err(|e| e.to_string())
+            match save_dir()
+                .and_then(|dir| {
+                    std::fs::read(dir.join("quicksave.empire-save")).map_err(|e| e.to_string())
+                })
                 .and_then(|b| SimWorld::load(&b))
             {
                 Ok(w) => {
@@ -493,11 +489,29 @@ fn activate(game: &mut Game, action: &ButtonAction) {
         }
     }
 }
+fn save_dir() -> Result<std::path::PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    let dir = std::env::var_os("LOCALAPPDATA").map(std::path::PathBuf::from);
+    #[cfg(target_os = "macos")]
+    let dir = std::env::var_os("HOME")
+        .map(|h| std::path::PathBuf::from(h).join("Library/Application Support"));
+    #[cfg(target_os = "ios")]
+    let dir = std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join("Documents"));
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "ios")))]
+    let dir = std::env::var_os("XDG_DATA_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".local/share"))
+        });
+    dir.map(|d| d.join("Open Empire"))
+        .ok_or("Application data directory unavailable".into())
+}
 fn save_game(game: &Game) -> Result<(), String> {
-    std::fs::create_dir_all("saves").map_err(|e| e.to_string())?;
+    let dir = save_dir()?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let bytes = game.world.save()?;
-    std::fs::write("saves/quicksave.tmp", bytes).map_err(|e| e.to_string())?;
-    std::fs::rename("saves/quicksave.tmp", "saves/quicksave.empire-save")
+    std::fs::write(dir.join("quicksave.tmp"), bytes).map_err(|e| e.to_string())?;
+    std::fs::rename(dir.join("quicksave.tmp"), dir.join("quicksave.empire-save"))
         .map_err(|e| e.to_string())?;
     let replay = Replay {
         format: 1,
@@ -507,7 +521,7 @@ fn save_game(game: &Game) -> Result<(), String> {
         final_hash: game.world.hash(),
     };
     std::fs::write(
-        "saves/quicksave.empire-replay",
+        dir.join("quicksave.empire-replay"),
         serde_json::to_vec(&replay).map_err(|e| e.to_string())?,
     )
     .map_err(|e| e.to_string())
@@ -856,6 +870,11 @@ fn draw_world(
         } else {
             Visibility::Hidden
         };
+        sprite.image = if tile.resource == Some(Goods::Wood) {
+            art.tree.clone()
+        } else {
+            art.stone.clone()
+        };
         sprite.color = match tile.resource {
             Some(Goods::Wood) => Color::srgb(0.18, 0.37, 0.19),
             Some(Goods::Food) => Color::srgb(0.65, 0.31, 0.19),
@@ -958,7 +977,7 @@ fn update_hud(
             })
             .unwrap_or_default();
         text.0 = format!(
-            "{}\n{}\n\n{}:{:02}  •  {} selected\n{}{}\n\nArrows · Pan\nScroll · Zoom\nShift · Add selection\nCtrl + 1–9 · Save group\n1–9 · Recall group\nSpace · Pause",
+            "{}\n{}\n\n{}:{:02}  |  {} selected\n{}{}\n\nArrows | Pan\nScroll | Zoom\nShift | Add selection\nCtrl + 1-9 | Save group\n1-9 | Recall group\nSpace | Pause",
             title,
             p.civilization.name(),
             game.world.tick / 600,
@@ -971,7 +990,7 @@ fn update_hud(
     if let Ok(mut text) = hint.single_mut() {
         text.0 = if game.world.finished {
             format!(
-                "MATCH COMPLETE · {}",
+                "MATCH COMPLETE | {}",
                 if game.world.winner == Some(0) {
                     "Victory"
                 } else {
@@ -979,7 +998,7 @@ fn update_hud(
                 }
             )
         } else if game.paused {
-            "PAUSED · Press Space or Resume to continue".into()
+            "PAUSED | Press Space or Resume to continue".into()
         } else {
             game.message.clone()
         };

@@ -175,3 +175,33 @@ fn campaign_objectives_are_bounded() {
     assert_eq!(m.progress(&m.world().unwrap(), 0).unwrap().len(), 4);
     assert!(campaign::Mission::original(4).is_err());
 }
+
+#[test]
+fn spearmen_counter_cavalry() {
+    let mut w = World::new(3, 2, MapKind::Land).unwrap();
+    w.entities.retain(|id, _| *id == 2 || *id == 6);
+    let attacker = w.entities.get_mut(&2).unwrap();
+    attacker.kind = Kind::Spearman;
+    attacker.pos = Pos::new(8, 12);
+    let defender = w.entities.get_mut(&6).unwrap();
+    defender.kind = Kind::Cavalry;
+    defender.pos = Pos::new(9, 12);
+    defender.hp = 110;
+    defender.max_hp = 110;
+    let c = cmd(
+        &w,
+        Action::Attack {
+            units: vec![2],
+            target: 6,
+        },
+    );
+    assert!(w.step(&[c]).is_empty());
+    assert_eq!(w.entities[&6].hp, 83);
+}
+
+#[test]
+fn saves_reject_unsafe_orders_even_with_valid_checksums() {
+    let mut w = World::new(1, 2, MapKind::Land).unwrap();
+    w.entities.get_mut(&2).unwrap().order = Order::Move(Pos::new(i16::MIN, i16::MIN));
+    assert!(World::load(&w.save().unwrap()).is_err());
+}

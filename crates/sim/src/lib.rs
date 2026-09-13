@@ -895,10 +895,15 @@ impl World {
         {
             return Err("invalid map".into());
         }
-        if self.entities.len() > 10000 {
+        if self.entities.len() > 10000 || self.next_id > u32::MAX - 10000 {
             return Err("too many entities".into());
         }
         for (id, e) in &self.entities {
+            if let Order::Move(pos) | Order::Gather(pos) = e.order {
+                if self.map.index(pos).is_none() {
+                    return Err("invalid order position".into());
+                }
+            }
             if *id != e.id
                 || *id >= self.next_id
                 || e.owner as usize >= self.players.len()
@@ -906,6 +911,7 @@ impl World {
                 || e.queue.len() > 5
                 || e.hp <= 0
                 || e.max_hp <= 0
+                || e.max_hp > 1_000_000
                 || e.hp > e.max_hp
             {
                 return Err("invalid entity state".into());

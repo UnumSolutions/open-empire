@@ -20,6 +20,13 @@ fn arg(args: &[String], i: usize, name: &str) -> Result<String, String> {
 fn run() -> Result<(), String> {
     let args: Vec<_> = env::args().skip(1).collect();
     match args.first().map(String::as_str) {
+        Some("identity") => {
+            println!(
+                "{}",
+                serde_json::to_string(&empire_sim::Identity::default())
+                    .map_err(|e| e.to_string())?
+            );
+        }
         Some("simulate") => {
             let ticks = args
                 .get(1)

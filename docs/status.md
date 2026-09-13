@@ -32,7 +32,7 @@ The agreed complete MVP remains the goal. This initial implementation is a proto
 - Simulation tick is 10 Hz; units currently step whole grid cells.
 - Original baseline state format is version 1. Unsupported identities are rejected. Experimental format changes may invalidate prototype saves.
 - Desktop game is two-player human versus basic AI. Headless simulation supports 1–8.
-- Local saves are relative to the launch directory (`saves/`). iPad sandbox storage is an unresolved platform task.
+- Desktop saves use the platform application-data directory. iPad Documents storage is configured but untested.
 - Original graphics are placeholders. Do not market this build as DE-quality rendering or a compatible DE engine.
 
 ## Next gates, in order
