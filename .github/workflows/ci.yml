@@ -1,39 +1,51 @@
 name: Rust
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+    tags: ['**']
+  pull_request:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-15, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master, 2026-10-16
         with:
           toolchain: 1.89.0
           components: rustfmt
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: Linux window dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxcursor-dev libxi-dev libxrandr-dev libxkbcommon-dev libudev-dev
       - run: cargo fmt --all --check
+      - run: python -m unittest discover -s scripts -p 'test_*_unit.py'
       - run: cargo test --locked
-      - run: cargo check --locked -p empire-client
+      - name: Build and link graphical client
+        run: cargo build --locked -p empire-client
       - run: cargo run --locked -p empire-tools -- simulate 300 2 determinism.empire-replay
       - run: cargo run --locked -p empire-tools -- replay determinism.empire-replay
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: replay-${{ matrix.os }}
           path: determinism.empire-replay
+          if-no-files-found: error
       - run: python scripts/test_tools.py
   compare-determinism:
     needs: test
+    timeout-minutes: 5
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: replay-*
           path: replays
